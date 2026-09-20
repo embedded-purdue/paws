@@ -1,0 +1,46 @@
+# ESP-IDF
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
+*.bin
+*.elf
+*.map
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.ipynb_checkpoints/
+
+# ML artifacts
+runs/
+logs/
+checkpoints/
+wandb/
+*.zip
+*.pth
+*.onnx
+*.mp4
+
+# Datasets: configs only
+ml/data/**
+!ml/data/
+!ml/data/**/
+!ml/data/.gitkeep
+!ml/data/**/*.yaml
+!ml/data/**/*.md
+
+# CAD exports: Onshape is source of truth
+cad/exports/*.step
+cad/exports/*.stl
+cad/exports/*.stp
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
