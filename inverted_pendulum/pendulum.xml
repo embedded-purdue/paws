@@ -1,0 +1,129 @@
+<!--
+  Cartpole: a cart on a rail, with a pole hinged on top.
+  Units: meters, kilograms, seconds, radians, newtons.
+  Axes: x = along the rail, z = up. The pole swings in the x-z plane.
+-->
+<mujoco model="cartpole">
+
+  <!-- ============ PHYSICS SETTINGS ============ -->
+  <!-- timestep: smaller = more accurate but slower (0.002 s = 500 physics steps per second)
+       integrator: "implicitfast" handles damping/friction more stably than the default -->
+  <option timestep="0.002" integrator="implicitfast" gravity="0 0 -9.81">
+    <!-- MuJoCo normally skips collisions between a body and its parent (pole and cart).
+         Disabling that filter lets the pole hit the cart instead of passing through it. -->
+    <flag filterparent="disable"/>
+  </option>
+
+  <!-- ============ DEFAULTS ============ -->
+  <!-- Every geom gets these unless it overrides them.
+       contype/conaffinity = 0 means "no collisions" (used for purely visual parts). -->
+  <default>
+    <geom contype="0" conaffinity="0"/>
+
+    <!-- Solid parts: add class="solid" to any geom that should collide.
+         friction : sliding friction between surfaces (0 = ice, 1 = rubber).
+         solref   : contact stiffness. First number = how quickly overlap is pushed out (s).
+                    Smaller = harder contact. Keep it >= 2x the timestep (0.004) or it goes unstable. -->
+    <default class="solid">
+      <geom contype="1" conaffinity="1" friction="0.8" solref="0.005 1"/>
+    </default>
+  </default>
+
+  <!-- ============ LOOKS (no effect on physics) ============ -->
+  <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.85 0.85 0.85" rgb2="0.75 0.75 0.75"
+             width="512" height="512"/>
+    <material name="grid" texture="grid" texrepeat="8 8"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -1 3" dir="0 0.3 -1"/>
+    <geom name="floor" class="solid" type="plane" size="3 3 0.1" material="grid"/>
+
+    <!-- Camera that follows the cart. In the viewer: Camera dropdown -> "follow" -->
+    <camera name="follow" mode="trackcom" pos="0 -3 0.8" xyaxes="1 0 0 0 0.2 1"/>
+
+    <!-- ============ RAIL (fixed to the world) ============ -->
+    <geom name="rail" type="capsule" fromto="-2 0 0.2  2 0 0.2" size="0.015" rgba="0.3 0.3 0.3 1"/>
+    <!-- Rail and end posts are visual only: the slider joint's range acts as the end stop -->
+    <geom name="post_left"  type="box" pos="-2 0 0.1" size="0.02 0.02 0.1" rgba="0.3 0.3 0.3 1"/>
+    <geom name="post_right" type="box" pos=" 2 0 0.1" size="0.02 0.02 0.1" rgba="0.3 0.3 0.3 1"/>
+
+    <!-- ============ CART ============ -->
+    <body name="cart" pos="0 0 0.2">
+      <!--
+        Slide joint: the cart moves along x only.
+        range       : how far the cart can travel (m). Keep inside the rail (+/-2).
+        damping     : friction that grows with speed, like belt/bearing drag (N per m/s).
+        frictionloss: constant friction that must be overcome to start moving (N).
+        armature    : extra inertia from the motor and pulleys spinning (kg).
+      -->
+      <joint name="slider" type="slide" axis="1 0 0"
+             limited="true" range="-1.8 1.8"
+             damping="1.0" frictionloss="0.5" armature="0.05"/>
+
+      <!-- Cart body. Box size is HALF-lengths: this is 0.4 x 0.2 x 0.1 m. -->
+      <geom name="cart_geom" class="solid" type="box" size="0.2 0.1 0.05" mass="1.0" rgba="0.2 0.4 0.8 1"/>
+
+      <!-- Wheels (looks only, mass 0 so they don't change the physics) -->
+      <geom name="wheel_fl" type="cylinder" pos=" 0.13  0.1 -0.05" euler="90 0 0" size="0.03 0.01" mass="0" rgba="0.1 0.1 0.1 1"/>
+      <geom name="wheel_fr" type="cylinder" pos=" 0.13 -0.1 -0.05" euler="90 0 0" size="0.03 0.01" mass="0" rgba="0.1 0.1 0.1 1"/>
+      <geom name="wheel_bl" type="cylinder" pos="-0.13  0.1 -0.05" euler="90 0 0" size="0.03 0.01" mass="0" rgba="0.1 0.1 0.1 1"/>
+      <geom name="wheel_br" type="cylinder" pos="-0.13 -0.1 -0.05" euler="90 0 0" size="0.03 0.01" mass="0" rgba="0.1 0.1 0.1 1"/>
+
+      <!-- Mount holding the axle above the cart (looks only) -->
+      <geom name="mount" type="box" pos="0 0 0.065" size="0.02 0.05 0.015" mass="0" rgba="0.5 0.5 0.5 1"/>
+
+      <!-- ============ POLE ============ -->
+      <!-- The pole body's pos is the PIVOT point: 0.08 m above the cart's center,
+           i.e. 0.03 m above the cart's top surface. The gap must be bigger than the
+           pole's radius, or the pole starts out touching the cart. -->
+      <body name="pole" pos="0 0 0.08">
+        <!--
+          Hinge joint: pole rotates about y. Angle 0 = straight up.
+          No range: when the pole falls, it lands on the cart (they collide).
+          damping     : air/bearing drag that grows with speed (N*m per rad/s).
+          frictionloss: constant bearing friction (N*m).
+        -->
+        <joint name="hinge" type="hinge" axis="0 1 0" damping="0.002" frictionloss="0.002"/>
+
+        <!-- Axle at the pivot (looks only) -->
+        <geom name="axle" type="cylinder" euler="90 0 0" size="0.02 0.06" mass="0" rgba="0.5 0.5 0.5 1"/>
+
+        <!-- The pole: a thin rod going UP from the pivot.
+             Length = last number in fromto (m). Radius = size (m). -->
+        <geom name="pole_geom" class="solid" type="capsule" fromto="0 0 0  0 0 0.6" size="0.015"
+              mass="0.2" rgba="0.9 0.5 0.1 1"/>
+
+        <!-- Optional weight at the tip: set mass above 0 to make the pole top-heavy -->
+        <geom name="tip_mass" class="solid" type="sphere" pos="0 0 0.6" size="0.03" mass="0" rgba="0.9 0.2 0.1 1"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- ============ MOTOR ============ -->
+  <!--
+    Pushes the cart along the slider.
+    ctrlrange : the control signal the policy sends, -1 to 1.
+    gear      : newtons per unit of control, so max force = 20 N.
+    dyntype="filter", dynprm : a real motor can't change force instantly. With a filter,
+                the force follows the control with a delay of about dynprm seconds (0.02 s here).
+                Set dyntype="none" to remove the delay.
+  -->
+  <actuator>
+    <general name="cart_motor" joint="slider" gear="20"
+             ctrllimited="true" ctrlrange="-1 1"
+             dyntype="filter" dynprm="0.02"/>
+  </actuator>
+
+  <!-- ============ SENSORS ============ -->
+  <!-- Like the encoders on a real cartpole. Read them in Python with data.sensordata,
+       or data.sensor("cart_pos").data. -->
+  <sensor>
+    <jointpos name="cart_pos"  joint="slider"/>
+    <jointvel name="cart_vel"  joint="slider"/>
+    <jointpos name="pole_angle" joint="hinge"/>
+    <jointvel name="pole_vel"  joint="hinge"/>
+  </sensor>
+
+</mujoco>
