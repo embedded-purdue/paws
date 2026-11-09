@@ -4,6 +4,12 @@ sdkconfig
 sdkconfig.old
 managed_components/
 dependencies.lock
+
+# External libraries (clone separately — see README)
+firmware/bluepad32/
+
+# Editor / LSP caches
+.cache/
 *.bin
 *.elf
 *.map
