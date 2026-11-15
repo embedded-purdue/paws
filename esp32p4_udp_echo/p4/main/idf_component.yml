@@ -1,0 +1,3 @@
+dependencies:
+  idf: ">=5.5"
+  espressif/ethernet_init: "^1.4.1"
