@@ -2,6 +2,14 @@
 # Official board pin mappings (IP101GRI PHY and P4 RMII EMAC).
 # Valid for espressif/ethernet_init 1.4.1 under ESP-IDF 5.5.x.
 CONFIG_IDF_TARGET="esp32p4"
+
+# The chip is silicon rev v3.1 (Waveshare Rev1.2 boards). v3.x has large
+# hardware differences from v0.x/v1.x and IDF treats them as mutually
+# exclusive revision ranges (see esp_hw_support/port/esp32p4/Kconfig.hw_support).
+# Without this, IDF defaults to the v0.x/v1.x range (REV_MIN=0.1, REV_MAX=1.99)
+# and the bootloader refuses to flash onto a v3.1 chip.
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n
+CONFIG_ESP32P4_REV_MIN_300=y
 CONFIG_ETHERNET_INTERNAL_SUPPORT=y
 CONFIG_ETHERNET_PHY_INTERFACE_RMII=y
 CONFIG_ETHERNET_RMII_CLK_INPUT=y

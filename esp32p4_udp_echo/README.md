@@ -32,6 +32,7 @@ Waveshare reports PCB Rev1.2 uses ESP32-P4 silicon v3.1. That is **not** the sam
 - `p4/main/idf_component.yml` declares espressif/ethernet_init 1.4.1 (downloaded during first build).
 - `p4/main/CMakeLists.txt`, `p4/CMakeLists.txt` identify the source and main IDF project.
 - `jetson/udp_client.c` is a desktop/Jetson C UDP client; uses POSIX sockets (works on macOS and Linux, not directly on native Windows).
+- `mac/udp_interactive_client.c` is an interactive POSIX-sockets UDP client (macOS/Linux): type a line, it's sent and the echoed reply is printed, repeat until `quit`/`exit`/Ctrl+D.
 
 ## Direct Ethernet cable wiring
 
@@ -73,6 +74,19 @@ cd jetson
 clang -std=c11 -O2 -Wall -Wextra udp_client.c -o udp_client
 ping -c 3 192.168.7.2
 ./udp_client 192.168.7.2 'Hello P4!'
+```
+
+For back-and-forth typing instead of a single one-shot message, use the
+interactive client in `mac/udp_interactive_client.c`: it reads a line from
+stdin, sends it, prints whatever the P4 echoes back, and repeats until you
+type `quit`/`exit` or press Ctrl+D. It also resets the terminal to canonical
+line-editing + echo mode on startup, so a prior program leaving your shell in
+raw/no-echo mode can't break typing.
+
+```sh
+cd mac
+clang -std=c11 -O2 -Wall -Wextra udp_interactive_client.c -o udp_interactive_client
+./udp_interactive_client 192.168.7.2
 ```
 
 Linux or Jetson:
