@@ -1,0 +1,18 @@
+# Waveshare ESP32-P4-WIFI6-DEV-KIT Rev1.2 (P4 silicon v3.x)
+CONFIG_IDF_TARGET="esp32p4"
+
+# silicon v3.x — without these the bootloader refuses to flash on a v3.1 chip
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=n
+CONFIG_ESP32P4_REV_MIN_300=y
+
+# Rev 3.x MSPI flash controller crashes at power-up without this workaround.
+# Symptom without it: CHIP_LP_WDT_RESET boot loop, no IDF output ever appears.
+CONFIG_P4_REV3_MSPI_CRASH_AFTER_POWER_UP_WORKAROUND=y
+
+# Console: USB JTAG (usbmodem port) instead of UART0.
+# This frees GPIO37/38 for the S3→P4 UART bridge; we can still monitor
+# output via idf_monitor on /dev/cu.usbmodem5B901220201.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Give the gait task enough stack for gait_t + feet[] + local vars.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=4096

@@ -12,24 +12,16 @@
 #include <math.h>
 
 #include "gait.h"
+#include "gamepad.h"
 #include "imu.h"
 #include "sdkconfig.h"
+#include "uart_bridge.h"
 
 #ifndef CONFIG_BLUEPAD32_PLATFORM_CUSTOM
 #error "Set CONFIG_BLUEPAD32_PLATFORM_CUSTOM=y in sdkconfig.defaults"
 #endif
 
-typedef struct {
-  int32_t axis_x;   // left  stick X  [-512, 511]
-  int32_t axis_y;   // left  stick Y  [-512, 511]
-  int32_t axis_rx;  // right stick X
-  int32_t axis_ry;  // right stick Y
-  int32_t brake;    // L2 / left trigger  [0, 1023]
-  int32_t throttle; // R2 / right trigger [0, 1023]
-  uint16_t buttons; // BUTTON_A … BUTTON_THUMB_R bitmask
-  uint8_t dpad;     // DPAD_UP … DPAD_LEFT bitmask
-  bool connected;
-} gamepad_state_t;
+// gamepad_state_t is defined in gamepad.h
 
 static gamepad_state_t g_gamepad = {0};
 static SemaphoreHandle_t g_gamepad_mutex;
@@ -226,6 +218,9 @@ int app_main(void) {
   // always runs on schedule regardless of sensor poll timing).
   xTaskCreatePinnedToCore(gait_task, "gait", 4096, NULL,
                           /*priority*/ 6, NULL, /*core*/ 1);
+
+  // UART bridge: relay raw gamepad state to P4 at 100 Hz on CPU0.
+  uart_bridge_start(g_gamepad_mutex, &g_gamepad);
 
   // BTstack stdio — skip when USB console is active (they conflict)
 #ifdef CONFIG_ESP_CONSOLE_UART
